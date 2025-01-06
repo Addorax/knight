@@ -70,8 +70,9 @@ main_screen.add_button(Button(412, 600, 200, 50, "Выход", gray, red))
 game_screen = Screen()
 game_background = pygame.image.load("trueblack_screen.png")
 game_background = pygame.transform.scale(game_background, (width, height))
-ninja = pygame.image.load("pixel_ninja_standing_wbackground.png")
-ninja_rect = ninja.get_rect(center=(width // 2, height // 2))
+ninja_right = pygame.image.load("pixel_ninja_standing_wbackground.png")
+ninja_left = pygame.transform.flip(ninja_right, True, False)
+ninja_rect = ninja_right.get_rect(center=(width // 2, height // 2))
 game_screen.add_button(Button(412, 900, 200, 50, "Назад", gray, red))
 
 settings_menu = Screen()
@@ -99,6 +100,7 @@ moving_up = False
 moving_down = False
 moving_left = False
 moving_right = False
+current_ninja_image = ninja_right
 
 while True:
     for event in pygame.event.get():
@@ -155,19 +157,21 @@ while True:
                 moving_right = False
 
     if show_ninja:
+        if moving_left:
+            ninja_rect.x -= 1
+            current_ninja_image = ninja_left
+        elif moving_right:
+            ninja_rect.x += 1
+            current_ninja_image = ninja_right
         if moving_up:
             ninja_rect.y -= 1
         if moving_down:
             ninja_rect.y += 1
-        if moving_left:
-            ninja_rect.x -= 1
-        if moving_right:
-            ninja_rect.x += 1
 
     if current_screen == game_screen:
         screen.blit(game_background, (0, 0))
         if show_ninja:
-            screen.blit(ninja, ninja_rect)
+            screen.blit(current_ninja_image, ninja_rect)
     else:
         screen.blit(background, (0, 0))
 
