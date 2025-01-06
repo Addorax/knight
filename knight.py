@@ -95,6 +95,10 @@ sound_menu.add_button(Button(412, 500, 200, 50, "Назад", gray, red))
 
 current_screen = main_screen
 show_ninja = False
+moving_up = False
+moving_down = False
+moving_left = False
+moving_right = False
 
 while True:
     for event in pygame.event.get():
@@ -131,6 +135,35 @@ while True:
             pygame.quit()
             sys.exit()
 
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_w:
+                moving_up = True
+            if event.key == pygame.K_s:
+                moving_down = True
+            if event.key == pygame.K_a:
+                moving_left = True
+            if event.key == pygame.K_d:
+                moving_right = True
+        if event.type == pygame.KEYUP:
+            if event.key == pygame.K_w:
+                moving_up = False
+            if event.key == pygame.K_s:
+                moving_down = False
+            if event.key == pygame.K_a:
+                moving_left = False
+            if event.key == pygame.K_d:
+                moving_right = False
+
+    if show_ninja:
+        if moving_up:
+            ninja_rect.y -= 1
+        if moving_down:
+            ninja_rect.y += 1
+        if moving_left:
+            ninja_rect.x -= 1
+        if moving_right:
+            ninja_rect.x += 1
+
     if current_screen == game_screen:
         screen.blit(game_background, (0, 0))
         if show_ninja:
@@ -139,5 +172,4 @@ while True:
         screen.blit(background, (0, 0))
 
     current_screen.draw(screen)
-
     pygame.display.flip()
