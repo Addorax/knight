@@ -139,4 +139,5 @@ while True:
         screen.blit(background, (0, 0))
 
     current_screen.draw(screen)
+
     pygame.display.flip()
