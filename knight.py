@@ -2,8 +2,7 @@ import pygame
 import sys
 
 pygame.init()
-
-width, height = 1024, 1024
+width, height = 1920, 1080
 screen = pygame.display.set_mode((width, height))
 pygame.display.set_caption("Главное меню")
 
@@ -15,7 +14,6 @@ green = (0, 255, 0)
 
 background = pygame.image.load("preview.jpg")
 background = pygame.transform.scale(background, (width, height))
-
 font = pygame.font.Font(None, 36)
 
 
@@ -44,30 +42,88 @@ class Button:
         return False
 
 
-buttons = [
-    Button(412, 300, 200, 50, "Старт", gray, green),
-    Button(412, 400, 200, 50, "Настройки", gray, white),
-    Button(412, 500, 200, 50, "Рекорды", gray, white),
-    Button(412, 600, 200, 50, "Выход", gray, red)
-]
+class Screen:
+    def __init__(self):
+        self.buttons = []
 
-running = True
-while running:
+    def add_button(self, button):
+        self.buttons.append(button)
+
+    def draw(self, surface):
+        for button in self.buttons:
+            button.draw(surface)
+
+    def handle_events(self, event):
+        for button in self.buttons:
+            button.check_hover(pygame.mouse.get_pos())
+            if button.handle_event(event):
+                return button.text
+        return None
+
+
+main_screen = Screen()
+main_screen.add_button(Button(412, 300, 200, 50, "Старт", gray, green))
+main_screen.add_button(Button(412, 400, 200, 50, "Настройки", gray, white))
+main_screen.add_button(Button(412, 500, 200, 50, "Рекорды", gray, white))
+main_screen.add_button(Button(412, 600, 200, 50, "Выход", gray, red))
+
+game_screen = Screen()
+game_screen.add_button(Button(412, 900, 200, 50, "Назад", gray, red))
+
+settings_menu = Screen()
+settings_menu.add_button(Button(412, 400, 200, 50, "Звук", gray, white))
+settings_menu.add_button(Button(412, 500, 200, 50, "Графика", gray, white))
+settings_menu.add_button(Button(412, 600, 200, 50, "Назад", gray, red))
+
+records_menu = Screen()
+records_menu.add_button(Button(412, 400, 200, 50, "Рекорды игрока", gray, white))
+records_menu.add_button(Button(412, 500, 200, 50, "Топ 10", gray, white))
+records_menu.add_button(Button(412, 600, 200, 50, "Назад", gray, red))
+
+info_window = Screen()
+info_window.add_button(Button(412, 400, 200, 50, "Закрыть", gray, red))
+
+graphics_menu = Screen()
+graphics_menu.add_button(Button(412, 500, 200, 50, "Назад", gray, red))
+
+sound_menu = Screen()
+sound_menu.add_button(Button(412, 500, 200, 50, "Назад", gray, red))
+
+current_screen = main_screen
+
+while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
-            running = False
-        for button in buttons:
-            if button.handle_event(event):
-                if button.text == "Выход":
-                    running = False
+            pygame.quit()
+            sys.exit()
+        action = current_screen.handle_events(event)
+        if action == "Назад":
+            if current_screen == graphics_menu or current_screen == sound_menu or current_screen == records_menu:
+                current_screen = settings_menu
+            elif current_screen == settings_menu:
+                current_screen = main_screen
+            elif current_screen == info_window:
+                current_screen = main_screen
+            elif current_screen == game_screen:
+                current_screen = main_screen
+        elif action == "Старт":
+            current_screen = game_screen
+        elif action == "Настройки":
+            current_screen = settings_menu
+        elif action == "Рекорды":
+            current_screen = records_menu
+        elif action == "Закрыть":
+            current_screen = main_screen
+        elif action == "Звук":
+            current_screen = sound_menu
+        elif action == "Графика":
+            current_screen = graphics_menu
+        elif action == "Топ 10":
+            current_screen = records_menu
+        elif action == "Выход":
+            pygame.quit()
+            sys.exit()
 
     screen.blit(background, (0, 0))
-
-    for button in buttons:
-        button.check_hover(pygame.mouse.get_pos())
-        button.draw(screen)
-
+    current_screen.draw(screen)
     pygame.display.flip()
-
-pygame.quit()
-sys.exit()
