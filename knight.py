@@ -2,7 +2,7 @@ import pygame
 import sys
 
 pygame.init()
-width, height = 1920, 1080
+width, height = 1920, 1000
 screen = pygame.display.set_mode((width, height))
 pygame.display.set_caption("Главное меню")
 
@@ -68,6 +68,10 @@ main_screen.add_button(Button(412, 500, 200, 50, "Рекорды", gray, white))
 main_screen.add_button(Button(412, 600, 200, 50, "Выход", gray, red))
 
 game_screen = Screen()
+game_background = pygame.image.load("trueblack_screen.png")
+game_background = pygame.transform.scale(game_background, (width, height))
+ninja = pygame.image.load("pixel_ninja_standing_wbackground.png")
+ninja_rect = ninja.get_rect(center=(width // 2, height // 2))
 game_screen.add_button(Button(412, 900, 200, 50, "Назад", gray, red))
 
 settings_menu = Screen()
@@ -90,6 +94,7 @@ sound_menu = Screen()
 sound_menu.add_button(Button(412, 500, 200, 50, "Назад", gray, red))
 
 current_screen = main_screen
+show_ninja = False
 
 while True:
     for event in pygame.event.get():
@@ -98,7 +103,7 @@ while True:
             sys.exit()
         action = current_screen.handle_events(event)
         if action == "Назад":
-            if current_screen == graphics_menu or current_screen == sound_menu or current_screen == records_menu:
+            if current_screen in [graphics_menu, sound_menu, records_menu]:
                 current_screen = settings_menu
             elif current_screen == settings_menu:
                 current_screen = main_screen
@@ -106,8 +111,10 @@ while True:
                 current_screen = main_screen
             elif current_screen == game_screen:
                 current_screen = main_screen
+                show_ninja = False
         elif action == "Старт":
             current_screen = game_screen
+            show_ninja = True
         elif action == "Настройки":
             current_screen = settings_menu
         elif action == "Рекорды":
@@ -124,6 +131,12 @@ while True:
             pygame.quit()
             sys.exit()
 
-    screen.blit(background, (0, 0))
+    if current_screen == game_screen:
+        screen.blit(game_background, (0, 0))
+        if show_ninja:
+            screen.blit(ninja, ninja_rect)
+    else:
+        screen.blit(background, (0, 0))
+
     current_screen.draw(screen)
     pygame.display.flip()
