@@ -68,7 +68,7 @@ main_screen.add_button(Button(412, 500, 200, 50, "Рекорды", gray, white))
 main_screen.add_button(Button(412, 600, 200, 50, "Выход", gray, red))
 
 game_screen = Screen()
-game_background = pygame.image.load("trueblack_screen.png")
+game_background = pygame.image.load("dungeonbg.png")
 game_background = pygame.transform.scale(game_background, (width, height))
 ninja_right = pygame.image.load("pixel_ninja_standing_wbackground.png")
 ninja_attack_right = pygame.image.load("pixel_ninja_attack_wbackground.png")
@@ -104,6 +104,11 @@ moving_left = False
 moving_right = False
 current_ninja_image = ninja_right
 ninja_attacking = False
+
+invisible_wall_top = pygame.Rect(0, 0, width, 390)
+invisible_wall_bottom = pygame.Rect(0, height - 200, width, 10)
+invisible_wall_left = pygame.Rect(0, 0, 100, height)
+invisible_wall_right = pygame.Rect(width - 10, 0, 10, height)
 
 while True:
     for event in pygame.event.get():
@@ -164,16 +169,16 @@ while True:
             ninja_attacking = False
 
     if show_ninja:
-        if moving_left:
-            ninja_rect.x -= 1
+        if moving_left and not ninja_rect.colliderect(invisible_wall_left):
+            ninja_rect.x -= 3
             current_ninja_image = ninja_left
-        elif moving_right:
-            ninja_rect.x += 1
+        elif moving_right and not ninja_rect.colliderect(invisible_wall_right):
+            ninja_rect.x += 3
             current_ninja_image = ninja_right
-        if moving_up:
-            ninja_rect.y -= 1
-        if moving_down:
-            ninja_rect.y += 1
+        if moving_up and not ninja_rect.colliderect(invisible_wall_top):
+            ninja_rect.y -= 2
+        if moving_down and not ninja_rect.colliderect(invisible_wall_bottom):
+            ninja_rect.y += 2
         if ninja_attacking:
             if moving_left:
                 current_ninja_image = ninja_attack_left
