@@ -189,6 +189,10 @@ while True:
         elif not (moving_left or moving_right):
             current_ninja_image = ninja_left if current_ninja_image == ninja_left else ninja_right
 
+        if ninja_rect.colliderect(invisible_wall_right):
+            current_screen = game_screen
+            ninja_rect.x = 51
+
     if current_screen == game_screen:
         screen.blit(game_background, (0, 0))
         if show_ninja:
