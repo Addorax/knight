@@ -77,6 +77,8 @@ ninja_attack_left = pygame.transform.flip(ninja_attack_right, True, False)
 ninja_rect = ninja_right.get_rect(center=(width // 2, height // 2))
 game_screen.add_button(Button(412, 900, 200, 50, "Назад", gray, red))
 
+sgame_screen = Screen()
+
 settings_menu = Screen()
 settings_menu.add_button(Button(412, 400, 200, 50, "Звук", gray, white))
 settings_menu.add_button(Button(412, 500, 200, 50, "Графика", gray, white))
@@ -105,10 +107,19 @@ moving_right = False
 current_ninja_image = ninja_right
 ninja_attacking = False
 
+zombie_image = pygame.image.load("zombie.png")
+zombie_rect = zombie_image.get_rect(center=(width // 4, height // 2))
+zombie_speed = 1
+
 invisible_wall_top = pygame.Rect(0, 0, width, 390)
 invisible_wall_bottom = pygame.Rect(0, height - 200, width, 10)
 invisible_wall_left = pygame.Rect(0, 0, 100, height)
 invisible_wall_right = pygame.Rect(width - 10, 0, 10, height)
+
+wall_touch_count = 0
+door_image = pygame.image.load("ddoor.png")
+door_rect = door_image.get_rect(center=(width // 2, height // 2))
+door_visible = False
 
 while True:
     for event in pygame.event.get():
@@ -126,6 +137,7 @@ while True:
             elif current_screen == game_screen:
                 current_screen = main_screen
                 show_ninja = False
+                zombie_rect.center = (width // 4, height // 2)
         elif action == "Старт":
             current_screen = game_screen
             show_ninja = True
@@ -179,24 +191,39 @@ while True:
             ninja_rect.y -= 2
         if moving_down and not ninja_rect.colliderect(invisible_wall_bottom):
             ninja_rect.y += 2
+
         if ninja_attacking:
-            if moving_left:
-                current_ninja_image = ninja_attack_left
-            elif moving_right:
+            if current_ninja_image == ninja_right:
                 current_ninja_image = ninja_attack_right
             else:
-                current_ninja_image = ninja_attack_left if current_ninja_image == ninja_left else ninja_attack_right
-        elif not (moving_left or moving_right):
-            current_ninja_image = ninja_left if current_ninja_image == ninja_left else ninja_right
+                current_ninja_image = ninja_attack_left
+        else:
+            current_ninja_image = ninja_right if moving_right else ninja_left
+
+        if zombie_rect.x < ninja_rect.x:
+            zombie_rect.x += zombie_speed
+        elif zombie_rect.x > ninja_rect.x:
+            zombie_rect.x -= zombie_speed
+
+        if zombie_rect.y < ninja_rect.y:
+            zombie_rect.y += zombie_speed
+        elif zombie_rect.y > ninja_rect.y:
+            zombie_rect.y -= zombie_speed
 
         if ninja_rect.colliderect(invisible_wall_right):
-            current_screen = game_screen
-            ninja_rect.x = 51
+            wall_touch_count += 1
+            if wall_touch_count >= 3:
+                door_visible = True
+            else:
+                ninja_rect.x = 51
 
     if current_screen == game_screen:
         screen.blit(game_background, (0, 0))
         if show_ninja:
             screen.blit(current_ninja_image, ninja_rect)
+            screen.blit(zombie_image, zombie_rect)
+        if door_visible:
+            screen.blit(door_image, door_rect)
     else:
         screen.blit(background, (0, 0))
 
