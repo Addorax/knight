@@ -10,18 +10,18 @@ WIDTH, HEIGHT = 1024, 768
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Untitled game")
 
-ninja_img = pygame.image.load("ninja.png").convert_alpha()
-ninja_attack_img = pygame.image.load("pixel_ninja_attack_wbackground.png").convert_alpha()
-background_img = pygame.image.load("dungeonbg.png").convert()
+ninja_img = pygame.image.load("data/ninja.png").convert_alpha()
+ninja_attack_img = pygame.image.load("data/pixel_ninja_attack_wbackground.png").convert_alpha()
+background_img = pygame.image.load("data/dungeonbg.png").convert()
 background_img = pygame.transform.scale(background_img, (WIDTH, HEIGHT))
-zombie_img = pygame.image.load("zombie.png").convert_alpha()
+zombie_img = pygame.image.load("data/zombie.png").convert_alpha()
 
-attack_sound = pygame.mixer.Sound("attack.wav")
-zombie_hit_sound = pygame.mixer.Sound("zombie_hit.wav")
-game_over_sound = pygame.mixer.Sound("game_over.wav")
-victory_sound = pygame.mixer.Sound("victory.mp3")
+attack_sound = pygame.mixer.Sound("data/attack.wav")
+zombie_hit_sound = pygame.mixer.Sound("data/zombie_hit.wav")
+game_over_sound = pygame.mixer.Sound("data/game_over.wav")
+victory_sound = pygame.mixer.Sound("data/victory.mp3")
 
-pygame.mixer.music.load("background_music.mp3")
+pygame.mixer.music.load("data/background_music.mp3")
 pygame.mixer.music.play(-1)
 
 WHITE = (255, 255, 255)
@@ -212,7 +212,7 @@ def create_zombie():
 
 
 def save_score(nickname, score):
-    conn = sqlite3.connect('game_scores.db')
+    conn = sqlite3.connect('data/game_scores.db')
     c = conn.cursor()
     c.execute('''CREATE TABLE IF NOT EXISTS scores
                  (nickname TEXT, score INTEGER, date TEXT)''')
@@ -222,7 +222,7 @@ def save_score(nickname, score):
 
 
 def get_top_scores(limit=10):
-    conn = sqlite3.connect('game_scores.db')
+    conn = sqlite3.connect('data/game_scores.db')
     c = conn.cursor()
     c.execute("SELECT nickname, score, date FROM scores ORDER BY score DESC LIMIT ?", (limit,))
     results = c.fetchall()
