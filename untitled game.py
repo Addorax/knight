@@ -1,3 +1,4 @@
+import os
 import sqlite3
 import sys
 
@@ -12,8 +13,12 @@ pygame.display.set_caption("Untitled game")
 
 ninja_img = pygame.image.load("data/ninja.png").convert_alpha()
 ninja_attack_img = pygame.image.load("data/pixel_ninja_attack_wbackground.png").convert_alpha()
-background_img = pygame.image.load("data/dungeonbg.png").convert()
-background_img = pygame.transform.scale(background_img, (WIDTH, HEIGHT))
+background_img_lvl1 = pygame.image.load("data/dungeonbg.png").convert()
+background_img_lvl2 = pygame.image.load("data/forestbg.png").convert()
+background_img_lvl3 = pygame.image.load("data/cavebg.png").convert()
+background_img_lvl1 = pygame.transform.scale(background_img_lvl1, (WIDTH, HEIGHT))
+background_img_lvl2 = pygame.transform.scale(background_img_lvl2, (WIDTH, HEIGHT))
+background_img_lvl3 = pygame.transform.scale(background_img_lvl3, (WIDTH, HEIGHT))
 zombie_img = pygame.image.load("data/zombie.png").convert_alpha()
 
 attack_sound = pygame.mixer.Sound("data/attack.wav")
@@ -77,13 +82,14 @@ class Ninja(pygame.sprite.Sprite):
 
 
 class Zombie(pygame.sprite.Sprite):
-    def __init__(self):
+    def __init__(self, level):
         super().__init__()
         self.image = zombie_img
         self.rect = self.image.get_rect()
         self.rect.center = (WIDTH // 2, HEIGHT // 2)
-        self.speed = 2
+        self.speed = 2 + level * 0.5
         self.health = 100
+        self.damage = 1 + level
 
     def update(self, ninja_x, ninja_y):
         dx = ninja_x - self.rect.centerx
@@ -142,18 +148,24 @@ class Screen:
         self.buttons = []
 
 
+class LevelSelectScreen(Screen):
+    def __init__(self):
+        super().__init__()
+        self.add_button(Button(WIDTH // 2 - 100, HEIGHT // 2 - 100, 200, 50, "Уровень 1", GRAY, GREEN))
+        self.add_button(Button(WIDTH // 2 - 100, HEIGHT // 2, 200, 50, "Уровень 2", GRAY, GREEN))
+        self.add_button(Button(WIDTH // 2 - 100, HEIGHT // 2 + 100, 200, 50, "Уровень 3", GRAY, GREEN))
+
+
 main_menu = Screen()
 main_menu.add_button(Button(WIDTH // 2 - 100, HEIGHT // 2 - 150, 200, 50, "Начать", GRAY, GREEN))
 main_menu.add_button(Button(WIDTH // 2 - 100, HEIGHT // 2 - 50, 200, 50, "Результаты", GRAY, GREEN))
-main_menu.add_button(Button(WIDTH // 2 - 100, HEIGHT // 2 + 50, 200, 50, "Настройки звука", GRAY,
-                            GREEN))
+main_menu.add_button(Button(WIDTH // 2 - 100, HEIGHT // 2 + 50, 200, 50, "Настройки звука", GRAY, GREEN))
 main_menu.add_button(Button(WIDTH // 2 - 100, HEIGHT // 2 + 150, 200, 50, "Выход", GRAY, RED))
 
 game_screen = Screen()
 
 game_over_screen = Screen()
-game_over_screen.add_button(Button(WIDTH // 2 - 100, HEIGHT // 2 + 100, 200, 50, "Главное меню", GRAY,
-                                   GREEN))
+game_over_screen.add_button(Button(WIDTH // 2 - 100, HEIGHT // 2 + 100, 200, 50, "Главное меню", GRAY, GREEN))
 
 victory_screen = Screen()
 
@@ -161,15 +173,15 @@ sound_settings = Screen()
 sound_settings.add_button(Button(WIDTH // 2 - 100, HEIGHT - 100, 200, 50, "Назад", GRAY, GREEN))
 
 second_screen = Screen()
-second_screen.add_button(Button(WIDTH // 2 - 100, HEIGHT // 2 + 170, 200, 50, "Сохранить результат",
-                                GRAY, GREEN))
+second_screen.add_button(Button(WIDTH // 2 - 100, HEIGHT // 2 + 170, 200, 50, "Сохранить результат", GRAY, GREEN))
 
 nickname_screen = Screen()
-nickname_screen.add_button(Button(WIDTH // 2 - 100, HEIGHT // 2 + 100, 200, 50, "Сохранить", GRAY,
-                                  GREEN))
+nickname_screen.add_button(Button(WIDTH // 2 - 100, HEIGHT // 2 + 100, 200, 50, "Сохранить", GRAY, GREEN))
 
 results_screen = Screen()
 results_screen.add_button(Button(WIDTH // 2 - 100, HEIGHT - 100, 200, 50, "Назад", GRAY, GREEN))
+
+level_select_screen = LevelSelectScreen()
 
 ninja = Ninja()
 zombies = pygame.sprite.Group()
@@ -207,21 +219,51 @@ def create_zombie():
             victory_sound.play()
         else:
             zombies.empty()
-    zombie = Zombie()
+    zombie = Zombie(selected_level)
     zombies.add(zombie)
 
 
+def initialize_database():
+    db_path = 'data/game_scores.db'
+    if not os.path.exists('data'):
+        os.makedirs('data')
+
+    conn = sqlite3.connect(db_path)
+    c = conn.cursor()
+
+    c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='scores'")
+    table_exists = c.fetchone()
+
+    if not table_exists:
+        c.execute('''CREATE TABLE scores
+                     (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                      nickname TEXT,
+                      score INTEGER,
+                      date TEXT)''')
+    else:
+        c.execute("PRAGMA table_info(scores)")
+        columns = [column[1] for column in c.fetchall()]
+        required_columns = ['id', 'nickname', 'score', 'date']
+
+        for column in required_columns:
+            if column not in columns:
+                c.execute(f"ALTER TABLE scores ADD COLUMN {column} TEXT")
+
+    conn.commit()
+    conn.close()
+
+
 def save_score(nickname, score):
+    initialize_database()
     conn = sqlite3.connect('data/game_scores.db')
     c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS scores
-                 (nickname TEXT, score INTEGER, date TEXT)''')
-    c.execute("INSERT INTO scores VALUES (?, ?, datetime('now'))", (nickname, score))
+    c.execute("INSERT INTO scores (nickname, score, date) VALUES (?, ?, datetime('now'))", (nickname, score))
     conn.commit()
     conn.close()
 
 
 def get_top_scores(limit=10):
+    initialize_database()
     conn = sqlite3.connect('data/game_scores.db')
     c = conn.cursor()
     c.execute("SELECT nickname, score, date FROM scores ORDER BY score DESC LIMIT ?", (limit,))
@@ -232,6 +274,7 @@ def get_top_scores(limit=10):
 
 nickname = ""
 input_active = False
+selected_level = 1
 
 while running:
     for event in pygame.event.get():
@@ -239,14 +282,18 @@ while running:
             running = False
         action = current_screen.handle_events(event)
         if action == "Начать":
+            current_screen = level_select_screen
+        elif action in ["Уровень 1", "Уровень 2", "Уровень 3"]:
+            selected_level = int(action.split()[-1])
             current_screen = game_screen
             ninja.health = 100
             ninja.score = 0
-            level = 1
             zombies_killed = 0
             screens_cleared = 0
             zombies.empty()
             create_zombie()
+            max_screens = selected_level * 2
+            zombies_per_screen = selected_level * 2
         elif action == "Выход":
             running = False
         elif action == "Главное меню":
@@ -294,6 +341,10 @@ while running:
                 if input_active:
                     if event.key == pygame.K_RETURN:
                         input_active = False
+                        if nickname:
+                            save_score(nickname, ninja.score)
+                            nickname = ""
+                            current_screen = main_menu
                     elif event.key == pygame.K_BACKSPACE:
                         nickname = nickname[:-1]
                     else:
@@ -313,6 +364,13 @@ while running:
             create_zombie()
             zombie_spawn_timer = 0
 
+        if selected_level == 1:
+            screen.blit(background_img_lvl1, (0, 0))
+        elif selected_level == 2:
+            screen.blit(background_img_lvl2, (0, 0))
+        else:
+            screen.blit(background_img_lvl3, (0, 0))
+
         for zombie in zombies:
             if ninja.attacking and ninja.rect.colliderect(zombie.rect):
                 zombie.health -= 10
@@ -325,7 +383,7 @@ while running:
                         create_zombie()
 
             if ninja.rect.colliderect(zombie.rect) and not ninja.attacking:
-                ninja.health -= 1
+                ninja.health -= zombie.damage
                 if ninja.health <= 0:
                     current_screen = nickname_screen
                     game_over_sound.play()
@@ -333,7 +391,6 @@ while running:
         if not zombies:
             create_zombie()
 
-        screen.blit(background_img, (0, 0))
         zombies.draw(screen)
         screen.blit(ninja.image, ninja.rect)
 
@@ -354,7 +411,7 @@ while running:
             victory_sound.play()
 
     elif current_screen == game_over_screen:
-        screen.blit(background_img, (0, 0))
+        screen.blit(background_img_lvl1, (0, 0))
         overlay = pygame.Surface((WIDTH, HEIGHT))
         overlay.set_alpha(128)
         overlay.fill(BLACK)
@@ -365,7 +422,7 @@ while running:
         screen.blit(final_score_text, (WIDTH // 2 - final_score_text.get_width() // 2, HEIGHT // 2 - 50))
         current_screen.draw(screen)
     elif current_screen == victory_screen:
-        screen.blit(background_img, (0, 0))
+        screen.blit(background_img_lvl1, (0, 0))
         overlay = pygame.Surface((WIDTH, HEIGHT))
         overlay.set_alpha(128)
         overlay.fill(BLACK)
@@ -383,7 +440,7 @@ while running:
         victory_screen.add_button(Button(WIDTH // 2 - 100, HEIGHT // 2 + 110, 200, 50, "Главное меню", GRAY, GREEN))
         current_screen.draw(screen)
     elif current_screen == sound_settings:
-        screen.blit(background_img, (0, 0))
+        screen.blit(background_img_lvl1, (0, 0))
         overlay = pygame.Surface((WIDTH, HEIGHT))
         overlay.set_alpha(128)
         overlay.fill(BLACK)
@@ -401,14 +458,14 @@ while running:
 
         current_screen.draw(screen)
     elif current_screen == main_menu:
-        screen.blit(background_img, (0, 0))
+        screen.blit(background_img_lvl1, (0, 0))
         overlay = pygame.Surface((WIDTH, HEIGHT))
         overlay.set_alpha(128)
         overlay.fill(BLACK)
         screen.blit(overlay, (0, 0))
         main_menu.draw(screen)
     elif current_screen == nickname_screen:
-        screen.blit(background_img, (0, 0))
+        screen.blit(background_img_lvl1, (0, 0))
         overlay = pygame.Surface((WIDTH, HEIGHT))
         overlay.set_alpha(128)
         overlay.fill(BLACK)
@@ -426,7 +483,7 @@ while running:
 
         current_screen.draw(screen)
     elif current_screen == results_screen:
-        screen.blit(background_img, (0, 0))
+        screen.blit(background_img_lvl1, (0, 0))
         overlay = pygame.Surface((WIDTH, HEIGHT))
         overlay.set_alpha(128)
         overlay.fill(BLACK)
@@ -440,6 +497,15 @@ while running:
             result_text = font.render(f"{i + 1}. {nickname}: {score} ({date})", True, WHITE)
             screen.blit(result_text, (WIDTH // 2 - result_text.get_width() // 2, 100 + i * 40))
 
+        current_screen.draw(screen)
+    elif current_screen == level_select_screen:
+        screen.blit(background_img_lvl1, (0, 0))
+        overlay = pygame.Surface((WIDTH, HEIGHT))
+        overlay.set_alpha(128)
+        overlay.fill(BLACK)
+        screen.blit(overlay, (0, 0))
+        level_select_text = font.render("Выберите уровень", True, WHITE)
+        screen.blit(level_select_text, (WIDTH // 2 - level_select_text.get_width() // 2, HEIGHT // 2 - 200))
         current_screen.draw(screen)
 
     pygame.display.flip()
